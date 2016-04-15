@@ -17,10 +17,6 @@ package="papin_maps.maps">
         </intent-filter>
     </activity>
 
-    <activity
-        android:name="papin_maps.maps.MapsActivity" android:label="@string/title_activity_maps">
-    </activity>
-
     <meta-data
         android:name="com.google.android.geo.API_KEY" android:value="AIzaSyDEsqsWOoFBopxMEi8P3zPmyJhqVef3AJg">
     </meta-data>
