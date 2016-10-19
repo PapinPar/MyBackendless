@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Maps</string>
     <string name="title_activity_maps">Map</string>
+    <string name="APP_ID">EAFC4783-5BFF-C828-FF19-DB52ABFEE300</string>
+    <string name="SECRET_ID">11D8A3BF-C9FD-E716-FF3F-BA96B7D43C00</string>
+
 </resources>
