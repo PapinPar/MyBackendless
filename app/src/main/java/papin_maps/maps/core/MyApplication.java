@@ -1,4 +1,4 @@
-package papin_maps.maps;
+package papin_maps.maps.core;
 
 import android.app.Application;
 

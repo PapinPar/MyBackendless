@@ -7,7 +7,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="papin_maps.maps.MainActivity">
+    tools:context="papin_maps.maps.ui.MainActivity">
 
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
@@ -15,24 +15,24 @@
         android:layout_height="match_parent"
         android:id="@+id/map"
         tools:context=".MapsActivity"
-        android:name="com.google.android.gms.maps.SupportMapFragment" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/location"
-        android:background="@android:drawable/ic_dialog_map"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true" />
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_above="@+id/getPhotos" />
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/getPhotos"
-        android:layout_below="@+id/location"
+        android:text="Get My Photos"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/location"
+        android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
-        android:alpha="0.4"
-        android:text="Get Photos"/>
+        android:text="TEST" />
 </RelativeLayout>

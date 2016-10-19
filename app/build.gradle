@@ -28,5 +28,7 @@ dependencies {
     compile 'com.google.android.gms:play-services:8.4.0'
     compile 'com.squareup.retrofit2:retrofit:2.1.0'
     compile 'com.squareup.retrofit:converter-gson:2.0.0-beta2'
+    compile 'com.rengwuxian.materialedittext:library:2.1.4'
     compile files('libs/backendless.jar')
+    compile 'com.squareup.picasso:picasso:2.5.2'
 }

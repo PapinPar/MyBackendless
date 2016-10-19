@@ -1,4 +1,4 @@
-package papin_maps.maps;
+package papin_maps.maps.ui;
 
 import android.Manifest;
 import android.app.Activity;
@@ -13,6 +13,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -20,7 +21,9 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 
+import com.backendless.BackendlessCollection;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
@@ -38,9 +41,17 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import papin_maps.maps.R;
+import papin_maps.maps.core.BackManager;
 
 public class
-MainActivity extends FragmentActivity implements OnMapReadyCallback {
+MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager.getPhotoListner {
 
     private GoogleMap map;
     private Bitmap bitmap;
@@ -54,24 +65,21 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback {
     private String currUri;
     private Context context;
     private boolean pirmission_granted = false;
-    private DownoadPhoto downoadPhoto;
-    private Thread t;
     static private String APP_ID = String.valueOf(R.string.APP_ID);
     static private String SECRET_ID = String.valueOf(R.string.SECRET_ID);
+
+    private ImageView image;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        downoadPhoto = new DownoadPhoto();
         context = getApplicationContext();
-
-        downoadPhoto.login();
 
         createDirectory();
 
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(4));
-        startActivityForResult(intent, 2);
+        //Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        //intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(4));
+        //startActivityForResult(intent, 2);
 
         //Intent intent = new Intent();
         //intent.setType("image/*");
@@ -121,7 +129,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback {
                 }
                 stream = getContentResolver().openInputStream(intent.getData());
                 bitmap = BitmapFactory.decodeStream(stream);
-                downoadPhoto.upload(bitmap, currUri);
+                //downoadPhoto.upload(bitmap, currUri);
 
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -140,7 +148,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback {
             Uri b1itmap = Uri.parse(currUri);
             try {
                 bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), b1itmap);
-                downoadPhoto.upload(bitmap, String.valueOf(b1itmap));
+                //downoadPhoto.upload(bitmap, String.valueOf(b1itmap));
             } catch (IOException e) {
                 Log.d("asd", "e:" + e.getMessage());
                 e.printStackTrace();
@@ -233,13 +241,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback {
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
             map.addMarker(new MarkerOptions().position(mylatlng).title("Me").draggable(true));
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
-            t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    downoadPhoto.dowloadPhotos(context, map);
-                }
-            });
-            t.start();
+            BackManager.getInstance().dowloadMyPhoto(mylatlng, MainActivity.this);
         }
     }
 
@@ -250,7 +252,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback {
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
             map.addMarker(new MarkerOptions().position(mylatlng).title("Me").draggable(true));
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
-            downoadPhoto.addIntoTable(mylatlng, currUri);
+            //downoadPhoto.addIntoTable(mylatlng, currUri);
 
         }
     }
@@ -287,21 +289,58 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback {
     }
 
 
+    @Override
+    public void getMyPhoto(final BackendlessCollection<Map> response) throws IOException {
+        final List<String> MyUrl = new ArrayList<>();
+        for (int i = 0; i < response.getData().size(); i++) {
+            MyUrl.add(String.valueOf(response.getData().get(i).get("photoName")));
+        }
+        Thread t;
+        final List<Bitmap> bitmaps = new ArrayList<>();
+        bitmaps.clear();
+
+
+        final Handler h = new Handler() {
+            public void handleMessage(android.os.Message msg) {
+                switch (msg.what) {
+                    case 1:
+                        showMarkers(response, bitmaps);
+                        break;
+                }
+            }
+        };
+
+        t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < MyUrl.size(); i++) {
+                    URL url = null;
+                    InputStream in = null;
+                    try {
+                      //  url = new URL(MyUrl.get(i));
+                       in = new java.net.URL(MyUrl.get(i)).openStream();
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();//url
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                        bitmaps.add(BitmapFactory.decodeStream(in));
+                }
+                h.sendEmptyMessage(1);
+
+            }
+        });t.start();
+
+
+
+    }
+
+    private void showMarkers(BackendlessCollection<Map> response, List<Bitmap> bitmaps) {
+        LatLng latLng;
+        for (int i = 0; i < response.getData().size(); i++) {
+            latLng = new LatLng((Double) response.getData().get(i).get("Latitude"), (Double) response.getData().get(i).get("Longitude"));
+            map.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(bitmaps.get(i))));
+        }
+    }
 }
-
-// BackendlessUser user = new BackendlessUser();
-// user.setEmail("ppapironi@mail.ru");
-// user.setPassword("_papin_");
-
-// Backendless.UserService.register(user, new BackendlessCallback<BackendlessUser>() {
-//     @Override
-//     public void handleResponse(BackendlessUser backendlessUser) {
-//         Log.d("Registratrion","Registratrion" + backendlessUser.getEmail()+"successfuly");
-//     }
-
-//     @Override
-//     public void handleFault(BackendlessFault fault) {
-//         super.handleFault(fault);
-//         Log.d("fail","fail");
-//     }
-// });
