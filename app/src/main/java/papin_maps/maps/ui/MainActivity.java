@@ -2,9 +2,12 @@ package papin_maps.maps.ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Criteria;
@@ -13,15 +16,15 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.backendless.BackendlessCollection;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -36,17 +39,20 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageSize;
+import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import papin_maps.maps.NearToMeActivity;
 import papin_maps.maps.R;
 import papin_maps.maps.core.BackManager;
 
@@ -56,8 +62,8 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     private GoogleMap map;
     private Bitmap bitmap;
     private File directory;
-    private Button location;
-    private Button markers;
+    private Button addPhoto;
+    private Button myPhoto;
     private GoogleApiClient mGoogleApiClient;
     private final int MY_PERMISSIONS_REQUEST = 21;
     private LatLng mylatlng;
@@ -68,8 +74,6 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     static private String APP_ID = String.valueOf(R.string.APP_ID);
     static private String SECRET_ID = String.valueOf(R.string.SECRET_ID);
 
-    private ImageView image;
-
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -77,18 +81,8 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
 
         createDirectory();
 
-        //Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        //intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(4));
-        //startActivityForResult(intent, 2);
-
-        //Intent intent = new Intent();
-        //intent.setType("image/*");
-        //intent.setAction(Intent.ACTION_GET_CONTENT);
-        //intent.addCategory(Intent.CATEGORY_OPENABLE);
-        //startActivityForResult(intent, 1);
-
-        markers = (Button) findViewById(R.id.getPhotos);
-        location = (Button) findViewById(R.id.location);
+        myPhoto = (Button) findViewById(R.id.getPhotos);
+        addPhoto = (Button) findViewById(R.id.location);
         checkPirmission();
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(LocationServices.API)
@@ -96,40 +90,28 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-    }
 
-    private Uri generateFileUri(int type) {
-        File file = null;
-        switch (type) {
-            case 4:
-                file = new File(directory.getPath() + "/" + "photo_"
-                        + System.currentTimeMillis() + ".png");
-                break;
-        }
-        currUri = String.valueOf(Uri.fromFile(file));
-        return Uri.fromFile(file);
-    }
-
-    private void createDirectory() {
-        directory = new File(
-                Environment
-                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                "MyFolder");
-        if (!directory.exists())
-            directory.mkdirs();
     }
 
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent intent) {
         InputStream stream = null;
+
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
+            Uri selectedImage = intent.getData();
+            String[] filePathColumn = {MediaStore.Images.Media.DATA};
+            Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
+            cursor.moveToFirst();
+            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+            String filePath = cursor.getString(columnIndex);
+            cursor.close();
             try {
                 if (bitmap != null) {
                     bitmap.recycle();
                 }
                 stream = getContentResolver().openInputStream(intent.getData());
                 bitmap = BitmapFactory.decodeStream(stream);
-                //downoadPhoto.upload(bitmap, currUri);
+                BackManager.getInstance().upload(bitmap, filePath, mylatlng);
 
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -148,52 +130,13 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             Uri b1itmap = Uri.parse(currUri);
             try {
                 bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), b1itmap);
-                //downoadPhoto.upload(bitmap, String.valueOf(b1itmap));
+                BackManager.getInstance().upload(bitmap, String.valueOf(b1itmap), mylatlng);
             } catch (IOException e) {
                 Log.d("asd", "e:" + e.getMessage());
                 e.printStackTrace();
             }
         }
 
-    }
-
-
-    ///    ***********     MAPS     ***********
-    private void checkPirmission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            pirmission_granted = true;
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    MY_PERMISSIONS_REQUEST);
-        }
-    }
-
-    private void init() {
-        map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-
-            @Override
-            public void onMapClick(LatLng latLng) {
-                Log.d("Maps", "onMapClick: " + latLng.latitude + "," + latLng.longitude);
-            }
-        });
-
-        map.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
-
-            @Override
-            public void onMapLongClick(LatLng latLng) {
-                Log.d("Maps", "onMapLongClick: " + latLng.latitude + "," + latLng.longitude);
-            }
-        });
-
-        map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
-
-            @Override
-            public void onCameraChange(CameraPosition camera) {
-                Log.d("Maps", "onCameraChange: " + camera.target.latitude + "," + camera.target.longitude);
-            }
-        });
     }
 
     @Override
@@ -205,21 +148,14 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         map.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
         init();
 
-        markers.setOnClickListener(new View.OnClickListener() {
+        myPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
-                        Manifest.permission.ACCESS_FINE_LOCATION);
-                if (permissionCheck == 0)
-                    pirmission_granted = true;
-                if (pirmission_granted == true) {
-                    drawMarkers();
-                }
+                showDialog(1);
             }
         });
 
-
-        location.setOnClickListener(new View.OnClickListener() {
+        addPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d("click", "click");
@@ -235,26 +171,26 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
 
     }
 
-    private void drawMarkers() {
+    private void drawMyPhotos() {
         Location mylocation = getLocation();
         if (mylocation != null) {
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
-            map.addMarker(new MarkerOptions().position(mylatlng).title("Me").draggable(true));
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
-            BackManager.getInstance().dowloadMyPhoto(mylatlng, MainActivity.this);
         }
+        BackManager.getInstance().dowloadMyPhoto(MainActivity.this);
     }
 
     private void drawMyLocation() {
+
         Location mylocation = getLocation();
-
         if (mylocation != null) {
+            showDialog(0);
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
-            map.addMarker(new MarkerOptions().position(mylatlng).title("Me").draggable(true));
+            //  map.addMarker(new MarkerOptions().position(mylatlng).title("Me").draggable(true));
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
-            //downoadPhoto.addIntoTable(mylatlng, currUri);
+        } else
+            Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
 
-        }
     }
 
     public Location getLocation() {
@@ -288,59 +224,159 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         map.animateCamera(cameraUpdate);
     }
 
-
     @Override
     public void getMyPhoto(final BackendlessCollection<Map> response) throws IOException {
-        final List<String> MyUrl = new ArrayList<>();
+        List<String> MyUrl = new ArrayList<>();
+
+        final ImageLoader imageLoader = ImageLoader.getInstance();
+        imageLoader.init(ImageLoaderConfiguration.createDefault(context));
+
         for (int i = 0; i < response.getData().size(); i++) {
             MyUrl.add(String.valueOf(response.getData().get(i).get("photoName")));
         }
-        Thread t;
-        final List<Bitmap> bitmaps = new ArrayList<>();
-        bitmaps.clear();
 
-
-        final Handler h = new Handler() {
-            public void handleMessage(android.os.Message msg) {
-                switch (msg.what) {
-                    case 1:
-                        showMarkers(response, bitmaps);
-                        break;
-                }
-            }
-        };
-
-        t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 0; i < MyUrl.size(); i++) {
-                    URL url = null;
-                    InputStream in = null;
-                    try {
-                      //  url = new URL(MyUrl.get(i));
-                       in = new java.net.URL(MyUrl.get(i)).openStream();
-                    } catch (MalformedURLException e) {
-                        e.printStackTrace();//url
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                        bitmaps.add(BitmapFactory.decodeStream(in));
-                }
-                h.sendEmptyMessage(1);
-
-            }
-        });t.start();
-
+        for (int i = 0; i < response.getData().size(); i++) {
+            Toast.makeText(context, "All photos will be downloaded", Toast.LENGTH_SHORT).show();
+            ImageSize targetSize = new ImageSize(100, 120);
+            final LatLng latLng;
+            latLng = new LatLng((Double) response.getData().get(i).get("Latitude"), (Double) response.getData().get(i).get("Longitude"));
+            imageLoader.loadImage(MyUrl.get(i)
+                    , targetSize, new SimpleImageLoadingListener() {
+                        @Override
+                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                            map.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(loadedImage)));
+                            Log.d("PAPIN_TAG", "imageUri" + imageUri);
+                        }
+                    });
+        }
 
 
     }
 
-    private void showMarkers(BackendlessCollection<Map> response, List<Bitmap> bitmaps) {
-        LatLng latLng;
-        for (int i = 0; i < response.getData().size(); i++) {
-            latLng = new LatLng((Double) response.getData().get(i).get("Latitude"), (Double) response.getData().get(i).get("Longitude"));
-            map.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(bitmaps.get(i))));
+    private void init() {
+        map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+
+            @Override
+            public void onMapClick(LatLng latLng) {
+                Log.d("Maps", "onMapClick: " + latLng.latitude + "," + latLng.longitude);
+            }
+        });
+
+        map.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+            }
+        });
+
+        map.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
+            @Override
+            public void onCameraChange(CameraPosition camera) {
+                Log.d("Maps", "onCameraChange: " + camera.target.latitude + "," + camera.target.longitude);
+            }
+        });
+
+    }
+
+    private void checkPirmission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            pirmission_granted = true;
+        } else {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_REQUEST);
         }
     }
+
+    private Uri generateFileUri(int type) {
+        File file = null;
+        switch (type) {
+            case 4:
+                file = new File(directory.getPath() + "/" + "photo_"
+                        + System.currentTimeMillis() + ".jpg");
+                break;
+        }
+        currUri = String.valueOf(Uri.fromFile(file));
+        return Uri.fromFile(file);
+    }
+
+    private void createDirectory() {
+        directory = new File(
+                Environment
+                        .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                "MyFolder");
+        if (!directory.exists())
+            directory.mkdirs();
+    }
+
+    protected Dialog onCreateDialog(int id) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        switch (id) {
+            case 0:
+                builder.setMessage("Choose Action")
+                        .setCancelable(true)
+                        .setPositiveButton("From Gallery",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int id) {
+                                        Intent i = new Intent(Intent.ACTION_PICK,
+                                                android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+                                        final int ACTIVITY_SELECT_IMAGE = 1234;
+                                        startActivityForResult(i, 1);
+
+                                        dialog.cancel();
+                                    }
+                                })
+                        .setNegativeButton("From Camera",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int id) {
+                                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                                        intent.putExtra(MediaStore.EXTRA_OUTPUT, generateFileUri(4));
+                                        startActivityForResult(intent, 2);
+                                        dialog.cancel();
+                                    }
+                                });
+                return builder.create();
+            case 1:
+                builder.setMessage("Choose Action")
+                        .setCancelable(true)
+                        .setPositiveButton("Near to me",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int id) {
+                                        startNeartome();
+                                        dialog.cancel();
+                                    }
+                                })
+                        .setNegativeButton("All my photos",
+                                new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog,
+                                                        int id) {
+                                        permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
+                                                Manifest.permission.ACCESS_FINE_LOCATION);
+                                        if (permissionCheck == 0)
+                                            pirmission_granted = true;
+                                        if (pirmission_granted == true) {
+                                            drawMyPhotos();
+                                        } else
+                                            drawMyPhotos();
+                                    }
+                                });
+                return builder.create();
+        }
+        return null;
+    }
+
+    private void startNeartome() {
+        drawMyLocation();
+        if (mylatlng != null) {
+            Intent i = new Intent(this, NearToMeActivity.class);
+            i.putExtra("lon", mylatlng.longitude);
+            i.putExtra("lan", mylatlng.latitude);
+            startActivity(i);
+        } else
+            Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
+    }
+
 }
