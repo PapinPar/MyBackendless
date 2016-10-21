@@ -10,6 +10,11 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -38,7 +43,10 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
@@ -52,9 +60,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import papin_maps.maps.NearToMeActivity;
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import papin_maps.maps.R;
 import papin_maps.maps.core.BackManager;
+import papin_maps.maps.model.map.MainAddress;
+import papin_maps.maps.retrofit.API;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class
 MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager.getPhotoListner {
@@ -62,6 +78,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     private GoogleMap map;
     private Bitmap bitmap;
     private File directory;
+    private Location mylocation;
     private Button addPhoto;
     private Button myPhoto;
     private GoogleApiClient mGoogleApiClient;
@@ -70,6 +87,10 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     private int permissionCheck;
     private String currUri;
     private Context context;
+    private Gson gson;
+    private Retrofit retrofit;
+    private API api;
+    private String sLat;
     private boolean pirmission_granted = false;
     static private String APP_ID = String.valueOf(R.string.APP_ID);
     static private String SECRET_ID = String.valueOf(R.string.SECRET_ID);
@@ -90,6 +111,9 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        mylocation = getLocation();
+        if (mylocation != null)
+            mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
 
     }
 
@@ -111,7 +135,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                 }
                 stream = getContentResolver().openInputStream(intent.getData());
                 bitmap = BitmapFactory.decodeStream(stream);
-                BackManager.getInstance().upload(bitmap, filePath, mylatlng);
+                createData(bitmap, filePath, mylatlng);
 
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
@@ -130,7 +154,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             Uri b1itmap = Uri.parse(currUri);
             try {
                 bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), b1itmap);
-                BackManager.getInstance().upload(bitmap, String.valueOf(b1itmap), mylatlng);
+                createData(bitmap, String.valueOf(b1itmap), mylatlng);
             } catch (IOException e) {
                 Log.d("asd", "e:" + e.getMessage());
                 e.printStackTrace();
@@ -138,6 +162,41 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         }
 
     }
+
+    private void createData(final Bitmap bitmap, final String filePath, final LatLng mylatlng) {
+
+        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
+        gson = new GsonBuilder()
+                .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+                .create();
+        retrofit = new Retrofit.Builder()
+                .baseUrl("http://maps.googleapis.com/maps/api/geocode/")
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build();
+        api = retrofit.create(API.class);
+        sLat = mylatlng.latitude + "," + mylatlng.longitude;
+        Call<MainAddress> usersCall = api.getAddress("false", sLat, "ru");
+        usersCall.enqueue(new Callback<MainAddress>() {
+            @Override
+            public void onResponse(Call<MainAddress> call, Response<MainAddress> response1) {
+                MainAddress mainAddress = response1.body();
+                BackManager.getInstance().upload(bitmap, filePath, mylatlng,mainAddress.getResults().get(0).getFormattedAddress());
+            }
+
+            @Override
+            public void onFailure(Call<MainAddress> call, Throwable t) {
+
+            }
+
+        });
+
+
+
+    }
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -151,6 +210,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         myPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                drawMyLocation();
                 showDialog(1);
             }
         });
@@ -165,6 +225,11 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                     pirmission_granted = true;
                 if (pirmission_granted == true) {
                     drawMyLocation();
+                    if (mylatlng != null) {
+                        showDialog(0);
+                    } else {
+                        Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
@@ -172,7 +237,6 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     }
 
     private void drawMyPhotos() {
-        Location mylocation = getLocation();
         if (mylocation != null) {
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
@@ -181,10 +245,8 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     }
 
     private void drawMyLocation() {
-
-        Location mylocation = getLocation();
+        mylocation = getLocation();
         if (mylocation != null) {
-            showDialog(0);
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
             //  map.addMarker(new MarkerOptions().position(mylatlng).title("Me").draggable(true));
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
@@ -244,6 +306,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                     , targetSize, new SimpleImageLoadingListener() {
                         @Override
                         public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
+                            loadedImage = getCroppedBitmap(loadedImage);
                             map.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(loadedImage)));
                             Log.d("PAPIN_TAG", "imageUri" + imageUri);
                         }
@@ -272,6 +335,19 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             @Override
             public void onCameraChange(CameraPosition camera) {
                 Log.d("Maps", "onCameraChange: " + camera.target.latitude + "," + camera.target.longitude);
+            }
+        });
+
+        map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(new LatLng(marker.getPosition().latitude, marker.getPosition().longitude))
+                        .zoom(23)
+                        .build();
+                CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
+                map.animateCamera(cameraUpdate);
+                return true;
             }
         });
 
@@ -321,9 +397,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                                                         int id) {
                                         Intent i = new Intent(Intent.ACTION_PICK,
                                                 android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI);
-                                        final int ACTIVITY_SELECT_IMAGE = 1234;
                                         startActivityForResult(i, 1);
-
                                         dialog.cancel();
                                     }
                                 })
@@ -377,6 +451,28 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             startActivity(i);
         } else
             Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
+    }
+
+    public Bitmap getCroppedBitmap(Bitmap bitmap) {
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
+                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
+
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        // canvas.drawRoundRect(rectF, roundPx, roundPx, paint);
+        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2,
+                bitmap.getWidth() / 2, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+        //Bitmap _bmp = Bitmap.createScaledBitmap(output, 60, 60, false);
+        //return _bmp;
+        return output;
     }
 
 }

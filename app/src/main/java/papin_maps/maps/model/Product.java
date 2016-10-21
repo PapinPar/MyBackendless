@@ -6,8 +6,10 @@ package papin_maps.maps.model;
 
 public class Product {
     public String url;
+    public String street;
 
-    public Product(String url) {
+    public Product(String url,String street) {
         this.url = url;
+        this.street = street;
     }
 }

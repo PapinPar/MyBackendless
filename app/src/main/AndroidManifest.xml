@@ -30,7 +30,7 @@
         </activity>
 
         <activity android:name=".ui.MainActivity"></activity>
-        <activity android:name=".NearToMeActivity"></activity>
+        <activity android:name=".ui.NearToMeActivity"></activity>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

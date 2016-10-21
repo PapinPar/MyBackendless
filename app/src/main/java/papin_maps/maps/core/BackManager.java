@@ -63,7 +63,7 @@ public class BackManager {
         return true;
     }
 
-    public void upload(Bitmap bitmap, String currUri, final LatLng latLng) {
+    public void upload(Bitmap bitmap, String currUri, final LatLng latLng, final String street) {
         BackendlessFile phFile = new BackendlessFile("");
         final String[] name = currUri.split("/");
         final int size = name.length;
@@ -72,7 +72,7 @@ public class BackManager {
                     @Override
                     public void handleResponse(final BackendlessFile backendlessFile) {
                         Log.d("asd", "asd");
-                        addIntoTable(latLng, name[size - 1]);
+                        addIntoTable(latLng, name[size - 1],street);
                     }
 
                     @Override
@@ -82,7 +82,7 @@ public class BackManager {
                 });
     }
 
-    public void addIntoTable(LatLng latLng, String currUri) {
+    public void addIntoTable(LatLng latLng, String currUri,String street) {
         String pathPhoto;
         if (currUri.contains("/")) {
             String[] name = currUri.split("/");
@@ -98,6 +98,7 @@ public class BackManager {
         myTable.Longitude = String.valueOf(latLng.longitude);
         myTable.category = "Photos";
         myTable.geoPoint = new GeoPoint(latLng.latitude, latLng.longitude);
+        myTable.street = street;
         Backendless.Data.of(MyTable.class).save(myTable, new AsyncCallback<MyTable>() {
             @Override
             public void handleResponse(MyTable myTable) {

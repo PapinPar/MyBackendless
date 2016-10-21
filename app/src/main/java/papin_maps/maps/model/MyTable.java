@@ -13,5 +13,5 @@ public class MyTable {
     public String Longitude;
     public String category;
     public GeoPoint geoPoint;
-
+    public String street;
 }
