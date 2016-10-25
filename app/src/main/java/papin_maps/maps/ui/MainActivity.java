@@ -6,8 +6,8 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -29,6 +29,7 @@ import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.backendless.BackendlessCollection;
@@ -51,12 +52,14 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
+import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -85,7 +88,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     private final int MY_PERMISSIONS_REQUEST = 21;
     private LatLng mylatlng;
     private int permissionCheck;
-    private String currUri;
+    private String currUri, email;
     private Context context;
     private Gson gson;
     private Retrofit retrofit;
@@ -94,12 +97,15 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     private boolean pirmission_granted = false;
     static private String APP_ID = String.valueOf(R.string.APP_ID);
     static private String SECRET_ID = String.valueOf(R.string.SECRET_ID);
+    private SharedPreferences sp;
+    private HashMap<String, String> myMap;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context = getApplicationContext();
-
+        sp = getSharedPreferences("Data", MODE_PRIVATE);
+        email = sp.getString("EMAIL", "");
         createDirectory();
 
         myPhoto = (Button) findViewById(R.id.getPhotos);
@@ -120,15 +126,17 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent intent) {
         InputStream stream = null;
+        int min = 30;
+        int max = 123;
+        String symbols = "qwertyuiopasdfghjklzxcvbnmQAZWSXEDCRFVTGBYHNUJMIKOLP1234567890";
+        StringBuilder randString = new StringBuilder();
+        int count = (int) (Math.random() * ++max) + min;
+        for (int i = 0; i < count; i++)
+            randString.append(symbols.charAt((int) (Math.random() * symbols.length())));
+        String filePath = String.valueOf(randString);
+        Log.d("PAPIN_TAG", "" + filePath);
 
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
-            Uri selectedImage = intent.getData();
-            String[] filePathColumn = {MediaStore.Images.Media.DATA};
-            Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
-            cursor.moveToFirst();
-            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-            String filePath = cursor.getString(columnIndex);
-            cursor.close();
             try {
                 if (bitmap != null) {
                     bitmap.recycle();
@@ -154,7 +162,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             Uri b1itmap = Uri.parse(currUri);
             try {
                 bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), b1itmap);
-                createData(bitmap, String.valueOf(b1itmap), mylatlng);
+                createData(bitmap, filePath, mylatlng);
             } catch (IOException e) {
                 Log.d("asd", "e:" + e.getMessage());
                 e.printStackTrace();
@@ -183,7 +191,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             @Override
             public void onResponse(Call<MainAddress> call, Response<MainAddress> response1) {
                 MainAddress mainAddress = response1.body();
-                BackManager.getInstance().upload(bitmap, filePath, mylatlng,mainAddress.getResults().get(0).getFormattedAddress());
+                BackManager.getInstance().upload(email, bitmap, filePath, mylatlng, mainAddress.getResults().get(0).getFormattedAddress());
             }
 
             @Override
@@ -192,7 +200,6 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             }
 
         });
-
 
 
     }
@@ -218,18 +225,18 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         addPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d("click", "click");
+                Log.d("popoutPhoto", "popoutPhoto");
                 permissionCheck = ContextCompat.checkSelfPermission(MainActivity.this,
                         Manifest.permission.ACCESS_FINE_LOCATION);
                 if (permissionCheck == 0)
                     pirmission_granted = true;
                 if (pirmission_granted == true) {
                     drawMyLocation();
-                    if (mylatlng != null) {
-                        showDialog(0);
-                    } else {
-                        Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
-                    }
+                    //   if (mylatlng != null) {
+                    showDialog(0);
+                    //  } else {
+                    Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
+                    // }
                 }
             }
         });
@@ -241,14 +248,13 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
         }
-        BackManager.getInstance().dowloadMyPhoto(MainActivity.this);
+        BackManager.getInstance().dowloadMyPhoto(email, MainActivity.this);
     }
 
     private void drawMyLocation() {
         mylocation = getLocation();
         if (mylocation != null) {
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
-            //  map.addMarker(new MarkerOptions().position(mylatlng).title("Me").draggable(true));
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
         } else
             Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
@@ -273,7 +279,6 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                     location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             }
         }
-
         return location;
     }
 
@@ -289,7 +294,8 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     @Override
     public void getMyPhoto(final BackendlessCollection<Map> response) throws IOException {
         List<String> MyUrl = new ArrayList<>();
-
+        myMap = new HashMap<>();
+        myMap.clear();
         final ImageLoader imageLoader = ImageLoader.getInstance();
         imageLoader.init(ImageLoaderConfiguration.createDefault(context));
 
@@ -306,8 +312,9 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                     , targetSize, new SimpleImageLoadingListener() {
                         @Override
                         public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                            loadedImage = getCroppedBitmap(loadedImage);
-                            map.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(loadedImage)));
+                            Bitmap loadedImage2 = getCroppedBitmap(loadedImage);
+                            String id = map.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(loadedImage2))).getId();
+                            myMap.put(id, imageUri);
                             Log.d("PAPIN_TAG", "imageUri" + imageUri);
                         }
                     });
@@ -347,10 +354,28 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                         .build();
                 CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
                 map.animateCamera(cameraUpdate);
+
+                popoutPhoto(marker.getId());
                 return true;
             }
         });
 
+    }
+
+    private void popoutPhoto(String id) {
+
+        Dialog dialog = new Dialog(MainActivity.this);
+        dialog.setContentView(R.layout.pop_out_layout);
+
+        ImageView image = (ImageView) dialog.findViewById(R.id.image);
+        Picasso.with(context)
+                .load(myMap.get(id))
+                .resize(320, 480)
+                .centerCrop()
+                .into(image);
+       // image.setImageBitmap(myMap.get(id));
+
+        dialog.show();
     }
 
     private void checkPirmission() {
@@ -395,8 +420,8 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                                 new DialogInterface.OnClickListener() {
                                     public void onClick(DialogInterface dialog,
                                                         int id) {
-                                        Intent i = new Intent(Intent.ACTION_PICK,
-                                                android.provider.MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+                                        Intent i = new Intent(Intent.ACTION_PICK);
+                                        i.setType("image/*");
                                         startActivityForResult(i, 1);
                                         dialog.cancel();
                                     }

@@ -26,12 +26,17 @@ import papin_maps.maps.model.MyTable;
 
 public class BackManager {
 
-    public interface getLoginAnswer {
-        void getLoginANswer(boolean answer);
+    public interface getLoginModelAnswer {
+        void getLoginModelAnswer(boolean answer);
     }
 
     public interface getPhotoListner {
         void getMyPhoto(BackendlessCollection<Map> rsponse) throws IOException;
+    }
+
+    public interface registrationAnswer{
+        void getRegistAnswer(BackendlessUser respone) throws IOException;
+        void getRegistAnswer(BackendlessFault fault) throws IOException;
     }
 
     private static BackManager instance;
@@ -48,31 +53,30 @@ public class BackManager {
         instance = new BackManager(context);
     }
 
-    public boolean login(String Email, String Password, final getLoginAnswer answer) {
-        Backendless.UserService.login("ppapironi@mail.ru", "_papin_", new AsyncCallback<BackendlessUser>() {
+    public boolean login(String Email, String Password, final getLoginModelAnswer answer) {
+        Backendless.UserService.login(Email, Password, new AsyncCallback<BackendlessUser>() {
             @Override
             public void handleResponse(BackendlessUser backendlessUser) {
-                answer.getLoginANswer(true);
+                answer.getLoginModelAnswer(true);
             }
 
             @Override
             public void handleFault(BackendlessFault backendlessFault) {
-                answer.getLoginANswer(false);
+                answer.getLoginModelAnswer(false);
             }
         });
         return true;
     }
 
-    public void upload(Bitmap bitmap, String currUri, final LatLng latLng, final String street) {
-        BackendlessFile phFile = new BackendlessFile("");
-        final String[] name = currUri.split("/");
-        final int size = name.length;
-        Backendless.Files.Android.upload(bitmap, Bitmap.CompressFormat.JPEG, 80, name[size - 1], "photos",
+    public void upload(final String email, Bitmap bitmap, final String fileName, LatLng latLng, final String street) {
+        latLng = new LatLng(50.0028932, 36.2732864);
+        final LatLng finalLatLng = latLng;
+        Backendless.Files.Android.upload(bitmap, Bitmap.CompressFormat.JPEG, 80, fileName, "photos",
                 new AsyncCallback<BackendlessFile>() {
                     @Override
                     public void handleResponse(final BackendlessFile backendlessFile) {
                         Log.d("asd", "asd");
-                        addIntoTable(latLng, name[size - 1],street);
+                        addIntoTable(email,finalLatLng, fileName,street);
                     }
 
                     @Override
@@ -82,7 +86,7 @@ public class BackManager {
                 });
     }
 
-    public void addIntoTable(LatLng latLng, String currUri,String street) {
+    public void addIntoTable(String email,LatLng latLng, String currUri,String street) {
         String pathPhoto;
         if (currUri.contains("/")) {
             String[] name = currUri.split("/");
@@ -92,7 +96,7 @@ public class BackManager {
             pathPhoto = currUri;
         }
         MyTable myTable = new MyTable();
-        myTable.email = "ppapironi@mail.ru";
+        myTable.email = email;
         myTable.photoName = "https://api.backendless.com/EAFC4783-5BFF-C828-FF19-DB52ABFEE300/v1/files/photos/" +pathPhoto;
         myTable.Latitude = String.valueOf(latLng.latitude);
         myTable.Longitude = String.valueOf(latLng.longitude);
@@ -107,6 +111,7 @@ public class BackManager {
 
             @Override
             public void handleFault(BackendlessFault backendlessFault) {
+                Log.d("PAPIN_TAG","fail"+backendlessFault.toString());
 
             }
         });
@@ -139,8 +144,8 @@ public class BackManager {
         });
     }
 
-    public void dowloadMyPhoto(final getPhotoListner response1) {
-        String whereClause = "email = 'ppapironi@mail.ru'";
+    public void dowloadMyPhoto(String email,final getPhotoListner response1) {
+        String whereClause = "email = '"+email+"'";
         BackendlessDataQuery dataQuery = new BackendlessDataQuery();
         dataQuery.setWhereClause(whereClause);
 
@@ -163,20 +168,28 @@ public class BackManager {
         });
 
     }
-
-    public void register() {
+    public void register(String sEmail, String sPassword, final registrationAnswer answer) {
         BackendlessUser user = new BackendlessUser();
-        user.setProperty("email", "james.bond@mi6.co.uk");
-        user.setPassword("iAmWatchingU");
+        user.setEmail(sEmail);
+        user.setPassword(sPassword);
 
         Backendless.UserService.register(user, new AsyncCallback<BackendlessUser>() {
             public void handleResponse(BackendlessUser registeredUser) {
-                // user has been registered and now can login
+                try {
+                    answer.getRegistAnswer(registeredUser);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             public void handleFault(BackendlessFault fault) {
-                // an error has occurred, the error code can be retrieved with fault.getCode()
+                try {
+                    answer.getRegistAnswer(fault);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
+
         });
 
     }

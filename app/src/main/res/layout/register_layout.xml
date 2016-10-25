@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context=".ui.MainActivity"
+    tools:context=".ui.RegisterActivity"
     >
 
     <LinearLayout
@@ -20,7 +20,7 @@
         <com.rengwuxian.materialedittext.MaterialEditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/email"
+            android:id="@+id/emailRegist"
             android:hint="Email"
             android:layout_marginTop="146dp"
             android:inputType="textEmailAddress"
@@ -36,7 +36,7 @@
         <com.rengwuxian.materialedittext.MaterialEditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/password"
+            android:id="@+id/passwordRegist"
             android:hint="Password"
             app:met_floatingLabel="highlight"
             android:visibility="visible"
@@ -50,33 +50,16 @@
 
 
         <Button
-            android:text="Sign In"
+            android:text="Register"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/butSignIn"
+            android:id="@+id/butRegister"
             android:visibility="visible"
             android:layout_below="@+id/password"
             android:layout_centerHorizontal="true"
             android:textColor="@android:color/white"
             style="@android:style/Widget.Button"
-            android:background="@color/colorAccent"
-            android:onClick="onClick (SignInActivity)" />
-
-        <Button
-            android:text="Sign Up"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/butSignUp"
-            android:layout_below="@+id/butSignIn"
-            android:layout_alignRight="@+id/butSignIn"
-            android:layout_alignEnd="@+id/butSignIn"
-            android:visibility="visible"
-            android:layout_alignLeft="@+id/butSignIn"
-            android:layout_alignStart="@+id/butSignIn"
-            android:layout_marginTop="8dp"
-            android:textColor="@android:color/white"
-            style="@android:style/Widget.Button"
-            android:background="@color/colorPrimary" />
+            android:background="@color/colorAccent" />
     </LinearLayout>
 
 

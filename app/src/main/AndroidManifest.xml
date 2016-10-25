@@ -8,7 +8,7 @@
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
+    <uses-feature android:name="android.hardware.location.gps" />
     <action android:name="android.media.action.IMAGE_CAPTURE" />
     <uses-feature
         android:name="android.hardware.camera"
@@ -31,6 +31,7 @@
 
         <activity android:name=".ui.MainActivity"></activity>
         <activity android:name=".ui.NearToMeActivity"></activity>
+        <activity android:name=".ui.RegisterActivity"></activity>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

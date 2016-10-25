@@ -8,9 +8,6 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
-import com.nostra13.universalimageloader.core.assist.ImageSize;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -28,7 +25,7 @@ public class MyAdapter extends BaseAdapter {
     private ArrayList<Product> objects;
     private final Picasso picasso;
 
-    public MyAdapter(Context context,ArrayList<Product> products) {
+    public MyAdapter(Context context, ArrayList<Product> products) {
         lInflater = LayoutInflater.from(context);
         picasso = Picasso.with(context);
         objects = products;
@@ -54,21 +51,27 @@ public class MyAdapter extends BaseAdapter {
     public View getView(int position, View convertView, ViewGroup parent) {
         final ViewHolder viewHolder;
         final Product product = getProduct(position);
-        if(convertView == null) {
+        if (convertView == null) {
             convertView = lInflater.inflate(R.layout.item_imageview, parent, false);
             viewHolder = new ViewHolder(convertView);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        ImageLoader imageLoader = ImageLoader.getInstance();
 
-        ImageSize targetSize = new ImageSize(320, 480);
-        imageLoader.init(ImageLoaderConfiguration.createDefault(parent.getContext()));
-        imageLoader.displayImage(objects.get(position).url,viewHolder.ivPost,targetSize);
+        Picasso.with(parent.getContext())
+                .load(objects.get(position).url).centerInside()
+                .resize(320, 480)
+                .into(viewHolder.ivPost);
+        //ImageLoader imageLoader = ImageLoader.getInstance();
+        //ImageSize targetSize = new ImageSize(320, 480);
+        //imageLoader.init(ImageLoaderConfiguration.createDefault(parent.getContext()));
+        //imageLoader.displayImage(objects.get(position).url,viewHolder.ivPost,targetSize);
+
         viewHolder.ivText.setText(objects.get(position).street);
         return convertView;
     }
+
     private static final class ViewHolder {
         private final ImageView ivPost;
         private final TextView ivText;
@@ -78,6 +81,7 @@ public class MyAdapter extends BaseAdapter {
             ivText = (TextView) root.findViewById(R.id.streetName);
         }
     }
+
     Product getProduct(int position) {
         return ((Product) getItem(position));
     }
