@@ -1,4 +1,4 @@
-package papin_maps.maps.ui;
+package papin_maps.maps.signIn;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -13,14 +13,14 @@ import com.rengwuxian.materialedittext.MaterialEditText;
 
 import dmax.dialog.SpotsDialog;
 import papin_maps.maps.R;
-import papin_maps.maps.core.BackManager;
-import papin_maps.maps.presenter.SignInPres;
+import papin_maps.maps.ui.MainActivity;
+import papin_maps.maps.registration.RegisterActivity;
 
 /**
  * Created by Papin on 19.10.2016.
  */
 
-public class SignInActivity extends Activity implements BackManager.getLoginModelAnswer {
+public class SignInActivity extends Activity implements MyPresenter.myAnswer {
 
     private Button sigIn, signUp;
     private SharedPreferences sp;
@@ -29,7 +29,6 @@ public class SignInActivity extends Activity implements BackManager.getLoginMode
     private String sEmail;
     private String sPassword;
     private AlertDialog dialog;
-    private SignInPres signInPres;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +40,7 @@ public class SignInActivity extends Activity implements BackManager.getLoginMode
         password = (MaterialEditText) findViewById(R.id.password);
         sigIn = (Button) findViewById(R.id.butSignIn);
         signUp = (Button) findViewById(R.id.butSignUp);
-        signInPres = new SignInPres();
+        final MyPresenter s = new MyPresenter(SignInActivity.this);
 
         sigIn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -53,7 +52,7 @@ public class SignInActivity extends Activity implements BackManager.getLoginMode
                 ed.putString("EMAIL", sEmail);
                 ed.putString("PASSWORD", sPassword);
                 ed.commit();
-                signInPres.login(sEmail, sPassword);
+                s.backAnswer(sEmail, sPassword);
                 //BackManager.getInstance().login(sEmail, sPassword, SignInActivity.this);
             }
         });
@@ -68,10 +67,9 @@ public class SignInActivity extends Activity implements BackManager.getLoginMode
 
     }
 
-
     @Override
-    public void getLoginModelAnswer(boolean answer) {
-        if (answer) {
+    public void Answer(boolean mynAswer) {
+        if (mynAswer) {
             Intent intent = new Intent(this, MainActivity.class);
             startActivity(intent);
             dialog.cancel();
@@ -80,4 +78,19 @@ public class SignInActivity extends Activity implements BackManager.getLoginMode
             Toast.makeText(this, "Wrond Email or Password", Toast.LENGTH_SHORT).show();
         }
     }
+
+
+    //@Override
+    //public void getLoginModelAnswer(boolean answer) {
+    //    if (answer) {
+    //        Intent intent = new Intent(this, MainActivity.class);
+    //        startActivity(intent);
+    //        dialog.cancel();
+    //    } else {
+    //        dialog.cancel();
+    //        Toast.makeText(this, "Wrond Email or Password", Toast.LENGTH_SHORT).show();
+    //    }
+    //}
+
+
 }

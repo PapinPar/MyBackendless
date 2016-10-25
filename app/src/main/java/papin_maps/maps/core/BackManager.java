@@ -168,7 +168,7 @@ public class BackManager {
         });
 
     }
-    public void register(String sEmail, String sPassword, final registrationAnswer answer) {
+    public void register(String sEmail, String sPassword, final registrationAnswer answer) throws IOException {
         BackendlessUser user = new BackendlessUser();
         user.setEmail(sEmail);
         user.setPassword(sPassword);

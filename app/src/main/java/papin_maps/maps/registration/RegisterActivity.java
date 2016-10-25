@@ -1,4 +1,4 @@
-package papin_maps.maps.ui;
+package papin_maps.maps.registration;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -13,24 +13,25 @@ import com.rengwuxian.materialedittext.MaterialEditText;
 import java.io.IOException;
 
 import papin_maps.maps.R;
-import papin_maps.maps.core.BackManager;
 
 /**
  * Created by Papin on 25.10.2016.
  */
 
-public class RegisterActivity extends Activity implements BackManager.registrationAnswer{
+public class RegisterActivity extends Activity implements RegisterPresenter.RegisterAnswer {
 
-   private Button registration;
-   private MaterialEditText email, password;
-   private String sEmail,sPassword;
+    private Button registration;
+    private MaterialEditText email, password;
+    private String sEmail, sPassword;
+    private RegisterPresenter registerPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.register_layout);
-        password = (MaterialEditText)findViewById(R.id.passwordRegist);
+        password = (MaterialEditText) findViewById(R.id.passwordRegist);
         email = (MaterialEditText) findViewById(R.id.emailRegist);
+        registerPresenter = new RegisterPresenter(RegisterActivity.this);
 
         registration = (Button) findViewById(R.id.butRegister);
         registration.setOnClickListener(new View.OnClickListener() {
@@ -38,7 +39,11 @@ public class RegisterActivity extends Activity implements BackManager.registrati
             public void onClick(View v) {
                 sEmail = email.getText().toString();
                 sPassword = password.getText().toString();
-                BackManager.getInstance().register(sEmail,sPassword,RegisterActivity.this);
+                if (sEmail.length() > 0 && sPassword.length() > 0)
+                    registerPresenter.getRegister(sEmail, sPassword);
+                else
+                    Toast.makeText(RegisterActivity.this, "Please input data", Toast.LENGTH_SHORT).show();
+                //BackManager.getInstance().register(sEmail,sPassword,RegisterActivity.this);
             }
         });
     }
@@ -51,6 +56,6 @@ public class RegisterActivity extends Activity implements BackManager.registrati
 
     @Override
     public void getRegistAnswer(BackendlessFault fault) throws IOException {
-        Toast.makeText(this, ""+fault.getMessage(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "" + fault.getMessage(), Toast.LENGTH_SHORT).show();
     }
 }
