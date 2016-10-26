@@ -31,7 +31,6 @@ public class MyAdapter extends BaseAdapter {
         objects = products;
     }
 
-
     @Override
     public int getCount() {
         return objects.size();
@@ -50,7 +49,6 @@ public class MyAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         final ViewHolder viewHolder;
-        final Product product = getProduct(position);
         if (convertView == null) {
             convertView = lInflater.inflate(R.layout.item_imageview, parent, false);
             viewHolder = new ViewHolder(convertView);
@@ -63,10 +61,6 @@ public class MyAdapter extends BaseAdapter {
                 .load(objects.get(position).url).centerInside()
                 .resize(320, 480)
                 .into(viewHolder.ivPost);
-        //ImageLoader imageLoader = ImageLoader.getInstance();
-        //ImageSize targetSize = new ImageSize(320, 480);
-        //imageLoader.init(ImageLoaderConfiguration.createDefault(parent.getContext()));
-        //imageLoader.displayImage(objects.get(position).url,viewHolder.ivPost,targetSize);
 
         viewHolder.ivText.setText(objects.get(position).street);
         return convertView;
@@ -81,9 +75,4 @@ public class MyAdapter extends BaseAdapter {
             ivText = (TextView) root.findViewById(R.id.streetName);
         }
     }
-
-    Product getProduct(int position) {
-        return ((Product) getItem(position));
-    }
-
 }

@@ -1,4 +1,4 @@
-package papin_maps.maps.ui;
+package papin_maps.maps.MVP.maps;
 
 import android.Manifest;
 import android.app.Activity;
@@ -10,11 +10,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -32,7 +27,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.backendless.BackendlessCollection;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
@@ -46,37 +40,19 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
-import com.nostra13.universalimageloader.core.assist.ImageSize;
-import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
+import papin_maps.maps.MVP.nearbyPhoto.NearbyActivity;
 import papin_maps.maps.R;
-import papin_maps.maps.core.BackManager;
-import papin_maps.maps.model.map.MainAddress;
-import papin_maps.maps.retrofit.API;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class
-MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager.getPhotoListner {
+MainActivity extends FragmentActivity implements OnMapReadyCallback, InterfaceMain {
 
     private GoogleMap map;
     private Bitmap bitmap;
@@ -90,15 +66,12 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     private int permissionCheck;
     private String currUri, email;
     private Context context;
-    private Gson gson;
-    private Retrofit retrofit;
-    private API api;
-    private String sLat;
     private boolean pirmission_granted = false;
     static private String APP_ID = String.valueOf(R.string.APP_ID);
     static private String SECRET_ID = String.valueOf(R.string.SECRET_ID);
     private SharedPreferences sp;
     private HashMap<String, String> myMap;
+    private PresenterMain presenterMain;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -106,8 +79,9 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         context = getApplicationContext();
         sp = getSharedPreferences("Data", MODE_PRIVATE);
         email = sp.getString("EMAIL", "");
+        presenterMain = new PresenterMain(MainActivity.this);
         createDirectory();
-
+        myMap = new HashMap<>();
         myPhoto = (Button) findViewById(R.id.getPhotos);
         addPhoto = (Button) findViewById(R.id.location);
         checkPirmission();
@@ -172,38 +146,10 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     }
 
     private void createData(final Bitmap bitmap, final String filePath, final LatLng mylatlng) {
-
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
-        gson = new GsonBuilder()
-                .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
-                .create();
-        retrofit = new Retrofit.Builder()
-                .baseUrl("http://maps.googleapis.com/maps/api/geocode/")
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build();
-        api = retrofit.create(API.class);
-        sLat = mylatlng.latitude + "," + mylatlng.longitude;
-        Call<MainAddress> usersCall = api.getAddress("false", sLat, "ru");
-        usersCall.enqueue(new Callback<MainAddress>() {
-            @Override
-            public void onResponse(Call<MainAddress> call, Response<MainAddress> response1) {
-                MainAddress mainAddress = response1.body();
-                BackManager.getInstance().upload(email, bitmap, filePath, mylatlng, mainAddress.getResults().get(0).getFormattedAddress());
-            }
-
-            @Override
-            public void onFailure(Call<MainAddress> call, Throwable t) {
-
-            }
-
-        });
-
-
+        onResume();
+        myMap.clear();
+        presenterMain.upload(email, bitmap, filePath, mylatlng);
     }
-
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -232,11 +178,11 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                     pirmission_granted = true;
                 if (pirmission_granted == true) {
                     drawMyLocation();
-                    //   if (mylatlng != null) {
+                       if (mylatlng != null) {
                     showDialog(0);
-                    //  } else {
+                      } else {
                     Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
-                    // }
+                     }
                 }
             }
         });
@@ -248,7 +194,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             mylatlng = new LatLng(mylocation.getLatitude(), mylocation.getLongitude());
             onCameraUPD(mylocation.getLatitude(), mylocation.getLongitude());
         }
-        BackManager.getInstance().dowloadMyPhoto(email, MainActivity.this);
+        presenterMain.dowloadMyPhoto(email);
     }
 
     private void drawMyLocation() {
@@ -291,38 +237,6 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
         map.animateCamera(cameraUpdate);
     }
 
-    @Override
-    public void getMyPhoto(final BackendlessCollection<Map> response) throws IOException {
-        List<String> MyUrl = new ArrayList<>();
-        myMap = new HashMap<>();
-        myMap.clear();
-        final ImageLoader imageLoader = ImageLoader.getInstance();
-        imageLoader.init(ImageLoaderConfiguration.createDefault(context));
-
-        for (int i = 0; i < response.getData().size(); i++) {
-            MyUrl.add(String.valueOf(response.getData().get(i).get("photoName")));
-        }
-
-        for (int i = 0; i < response.getData().size(); i++) {
-            Toast.makeText(context, "All photos will be downloaded", Toast.LENGTH_SHORT).show();
-            ImageSize targetSize = new ImageSize(100, 120);
-            final LatLng latLng;
-            latLng = new LatLng((Double) response.getData().get(i).get("Latitude"), (Double) response.getData().get(i).get("Longitude"));
-            imageLoader.loadImage(MyUrl.get(i)
-                    , targetSize, new SimpleImageLoadingListener() {
-                        @Override
-                        public void onLoadingComplete(String imageUri, View view, Bitmap loadedImage) {
-                            Bitmap loadedImage2 = getCroppedBitmap(loadedImage);
-                            String id = map.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(loadedImage2))).getId();
-                            myMap.put(id, imageUri);
-                            Log.d("PAPIN_TAG", "imageUri" + imageUri);
-                        }
-                    });
-        }
-
-
-    }
-
     private void init() {
         map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
 
@@ -345,12 +259,27 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             }
         });
 
+        map.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+            }
+        });
         map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(new LatLng(marker.getPosition().latitude, marker.getPosition().longitude))
-                        .zoom(23)
+                        .zoom(17)
                         .build();
                 CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
                 map.animateCamera(cameraUpdate);
@@ -373,7 +302,6 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
                 .resize(320, 480)
                 .centerCrop()
                 .into(image);
-       // image.setImageBitmap(myMap.get(id));
 
         dialog.show();
     }
@@ -470,7 +398,7 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
     private void startNeartome() {
         drawMyLocation();
         if (mylatlng != null) {
-            Intent i = new Intent(this, NearToMeActivity.class);
+            Intent i = new Intent(this, NearbyActivity.class);
             i.putExtra("lon", mylatlng.longitude);
             i.putExtra("lan", mylatlng.latitude);
             startActivity(i);
@@ -478,26 +406,40 @@ MainActivity extends FragmentActivity implements OnMapReadyCallback, BackManager
             Toast.makeText(context, "Please turn on geolacation", Toast.LENGTH_SHORT).show();
     }
 
-    public Bitmap getCroppedBitmap(Bitmap bitmap) {
-        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
-                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(output);
-
-        final int color = 0xff424242;
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 0, 0, 0);
-        paint.setColor(color);
-        // canvas.drawRoundRect(rectF, roundPx, roundPx, paint);
-        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2,
-                bitmap.getWidth() / 2, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-        //Bitmap _bmp = Bitmap.createScaledBitmap(output, 60, 60, false);
-        //return _bmp;
-        return output;
+    @Override
+    public Context getViewContext() {
+        return context;
     }
 
+    @Override
+    public void UploadAnswer(boolean answer) {
+        if (answer)
+            Toast.makeText(context, "Photo added successfully", Toast.LENGTH_SHORT).show();
+        else
+            Toast.makeText(context, "Fail", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void getMyPhoto(MarkerOptions options,String imageUri) throws IOException {
+        String id = map.addMarker(options).getId();
+        myMap.put(id, imageUri);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        presenterMain.attach(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        presenterMain.dettach();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        presenterMain.attach(this);
+    }
 }

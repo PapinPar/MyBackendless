@@ -31,12 +31,17 @@ public class BackManager {
     }
 
     public interface getPhotoListner {
-        void getMyPhoto(BackendlessCollection<Map> rsponse) throws IOException;
+        void getMyPhotoAnswer(BackendlessCollection<Map> rsponse) throws IOException;
     }
 
-    public interface registrationAnswer{
+    public interface registrationAnswer {
         void getRegistAnswer(BackendlessUser respone) throws IOException;
+
         void getRegistAnswer(BackendlessFault fault) throws IOException;
+    }
+
+    public interface getUploadAnswer {
+        void uploadAnswer(boolean answer);
     }
 
     private static BackManager instance;
@@ -68,15 +73,14 @@ public class BackManager {
         return true;
     }
 
-    public void upload(final String email, Bitmap bitmap, final String fileName, LatLng latLng, final String street) {
-        latLng = new LatLng(50.0028932, 36.2732864);
+    public void upload(final String email, Bitmap bitmap, final String fileName, LatLng latLng, final String street, final getUploadAnswer answer) {
         final LatLng finalLatLng = latLng;
         Backendless.Files.Android.upload(bitmap, Bitmap.CompressFormat.JPEG, 80, fileName, "photos",
                 new AsyncCallback<BackendlessFile>() {
                     @Override
                     public void handleResponse(final BackendlessFile backendlessFile) {
                         Log.d("asd", "asd");
-                        addIntoTable(email,finalLatLng, fileName,street);
+                        addIntoTable(email, finalLatLng, fileName, street, answer);
                     }
 
                     @Override
@@ -86,7 +90,7 @@ public class BackManager {
                 });
     }
 
-    public void addIntoTable(String email,LatLng latLng, String currUri,String street) {
+    public void addIntoTable(String email, LatLng latLng, String currUri, String street, final getUploadAnswer answer) {
         String pathPhoto;
         if (currUri.contains("/")) {
             String[] name = currUri.split("/");
@@ -97,7 +101,7 @@ public class BackManager {
         }
         MyTable myTable = new MyTable();
         myTable.email = email;
-        myTable.photoName = "https://api.backendless.com/EAFC4783-5BFF-C828-FF19-DB52ABFEE300/v1/files/photos/" +pathPhoto;
+        myTable.photoName = "https://api.backendless.com/EAFC4783-5BFF-C828-FF19-DB52ABFEE300/v1/files/photos/" + pathPhoto;
         myTable.Latitude = String.valueOf(latLng.latitude);
         myTable.Longitude = String.valueOf(latLng.longitude);
         myTable.category = "Photos";
@@ -106,18 +110,18 @@ public class BackManager {
         Backendless.Data.of(MyTable.class).save(myTable, new AsyncCallback<MyTable>() {
             @Override
             public void handleResponse(MyTable myTable) {
-
+                answer.uploadAnswer(true);
             }
 
             @Override
             public void handleFault(BackendlessFault backendlessFault) {
-                Log.d("PAPIN_TAG","fail"+backendlessFault.toString());
+                Log.d("PAPIN_TAG", "fail" + backendlessFault.toString());
 
             }
         });
     }
 
-    public void downloadPhoto(LatLng latLng,final getPhotoListner response1) {
+    public void downloadPhoto(LatLng latLng, final getPhotoListner response1) {
         String whereClause = "distance( " + latLng.latitude + "," + latLng.longitude + ", geoPoint.latitude, geoPoint.longitude ) < km(1)";
         BackendlessDataQuery dataQuery = new BackendlessDataQuery(whereClause);
         QueryOptions queryOptions = new QueryOptions();
@@ -129,7 +133,7 @@ public class BackManager {
             public void handleResponse(BackendlessCollection<Map> mapBackendlessCollection) {
                 Log.d("myUri", "myUri" + mapBackendlessCollection);
                 try {
-                    response1.getMyPhoto(mapBackendlessCollection);
+                    response1.getMyPhotoAnswer(mapBackendlessCollection);
                 } catch (IOException e) {
                     Log.d("PAPIN_TAG", "e" + e.getMessage());
                     e.printStackTrace();
@@ -144,8 +148,8 @@ public class BackManager {
         });
     }
 
-    public void dowloadMyPhoto(String email,final getPhotoListner response1) {
-        String whereClause = "email = '"+email+"'";
+    public void dowloadMyPhoto(String email, final getPhotoListner response1) {
+        String whereClause = "email = '" + email + "'";
         BackendlessDataQuery dataQuery = new BackendlessDataQuery();
         dataQuery.setWhereClause(whereClause);
 
@@ -154,7 +158,7 @@ public class BackManager {
             public void handleResponse(BackendlessCollection<Map> mapBackendlessCollection) {
                 Log.d("myUri", "myUri" + mapBackendlessCollection);
                 try {
-                    response1.getMyPhoto(mapBackendlessCollection);
+                    response1.getMyPhotoAnswer(mapBackendlessCollection);
                 } catch (IOException e) {
                     Log.d("PAPIN_TAG", "e" + e.getMessage());
                     e.printStackTrace();
@@ -168,6 +172,7 @@ public class BackManager {
         });
 
     }
+
     public void register(String sEmail, String sPassword, final registrationAnswer answer) throws IOException {
         BackendlessUser user = new BackendlessUser();
         user.setEmail(sEmail);
