@@ -10,8 +10,8 @@ import java.io.IOException;
  * Created by Papin on 26.10.2016.
  */
 
-public interface InterfaceMain {
+public interface MainInterface {
     Context getViewContext();
-    void UploadAnswer(boolean answer);
+    void downloadPhoto(boolean answer);
     void getMyPhoto(MarkerOptions options, String imageUri) throws IOException;
 }

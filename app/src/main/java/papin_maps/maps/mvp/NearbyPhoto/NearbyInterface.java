@@ -8,6 +8,6 @@ import papin_maps.maps.model.Product;
  * Created by Papin on 26.10.2016.
  */
 
-public interface InterfaceNearby  {
-    void NearbyRespone(ArrayList<Product> products);
+public interface NearbyInterface {
+    void getNearbyPhoto(ArrayList<Product> products);
 }

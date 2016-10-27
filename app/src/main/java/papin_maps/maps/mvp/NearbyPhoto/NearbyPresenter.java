@@ -15,23 +15,23 @@ import papin_maps.maps.model.Product;
  * Created by Papin on 26.10.2016.
  */
 
-public class PresenterNearby implements BackManager.getPhotoListner {
+public class NearbyPresenter implements BackManager.getPhotoListner {
 
-    private InterfaceNearby view;
+    private NearbyInterface view;
     private ArrayList<Product> products = new ArrayList<>();
 
-    public PresenterNearby(InterfaceNearby view) {
+    public NearbyPresenter(NearbyInterface view) {
         this.view = view;
     }
 
     public void getNearbyPhoto(LatLng latLng) {
         if (view != null) {
-            BackManager.getInstance().downloadPhoto(latLng, PresenterNearby.this);
+            BackManager.getInstance().downloadPhoto(latLng, NearbyPresenter.this);
         }
     }
 
 
-    public void attach(InterfaceNearby view) {
+    public void attach(NearbyInterface view) {
         this.view = view;
     }
 
@@ -40,7 +40,7 @@ public class PresenterNearby implements BackManager.getPhotoListner {
     }
 
     @Override
-    public void getMyPhotoAnswer(BackendlessCollection<Map> response) throws IOException {
+    public void getPhotosModel(BackendlessCollection<Map> response) throws IOException {
         List<String> MyUrl = new ArrayList<>();
         List<String> street = new ArrayList<>();
         for (int i = 0; i < response.getData().size(); i++) {
@@ -48,7 +48,7 @@ public class PresenterNearby implements BackManager.getPhotoListner {
             street.add(String.valueOf(response.getData().get(i).get("street")));
             products.add(new Product(MyUrl.get(i), street.get(i)));
         }
-        view.NearbyRespone(products);
+        view.getNearbyPhoto(products);
     }
 
 

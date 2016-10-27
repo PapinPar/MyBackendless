@@ -8,14 +8,14 @@ import papin_maps.maps.core.BackManager;
 
 public class SignInPresenter implements BackManager.getLoginModelAnswer {
 
-    private InterfaceSighIn answer;
+    private SigInInterface answer;
 
 
-    public SignInPresenter(InterfaceSighIn answer) {
+    public SignInPresenter(SigInInterface answer) {
         this.answer = answer;
     }
 
-    public void backAnswer(String email, String password) {
+    public void trySignIn(String email, String password) {
         if (answer != null)
             BackManager.getInstance().login(email, password, SignInPresenter.this);
     }
@@ -24,11 +24,11 @@ public class SignInPresenter implements BackManager.getLoginModelAnswer {
     @Override
     public void getLoginModelAnswer(boolean ModelAnswer) {
         if (answer != null) {
-            answer.sigInRespone(ModelAnswer);
+            answer.sigInResponse(ModelAnswer);
         }
     }
 
-    public void attach(InterfaceSighIn view) {
+    public void attach(SigInInterface view) {
         answer = view;
     }
 

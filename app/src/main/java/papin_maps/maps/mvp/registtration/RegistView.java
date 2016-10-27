@@ -18,12 +18,12 @@ import papin_maps.maps.R;
  * Created by Papin on 25.10.2016.
  */
 
-public class RegisterActivity extends Activity implements InterfaceRegistration {
+public class RegistView extends Activity implements RegistInterface {
 
     private Button registration;
     private MaterialEditText email, password;
     private String sEmail, sPassword;
-    private RegisterPresenter registerRespone;
+    private RegistPresenter registerRespone;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,7 +31,7 @@ public class RegisterActivity extends Activity implements InterfaceRegistration 
         setContentView(R.layout.register_layout);
         password = (MaterialEditText) findViewById(R.id.passwordRegist);
         email = (MaterialEditText) findViewById(R.id.emailRegist);
-        registerRespone = new RegisterPresenter(RegisterActivity.this);
+        registerRespone = new RegistPresenter(RegistView.this);
 
         registration = (Button) findViewById(R.id.butRegister);
         registration.setOnClickListener(new View.OnClickListener() {
@@ -40,22 +40,21 @@ public class RegisterActivity extends Activity implements InterfaceRegistration 
                 sEmail = email.getText().toString();
                 sPassword = password.getText().toString();
                 if (sEmail.length() > 0 && sPassword.length() > 0)
-                    registerRespone.getRegister(sEmail, sPassword);
+                    registerRespone.tryRegistration(sEmail, sPassword);
                 else
-                    Toast.makeText(RegisterActivity.this, "Please input data", Toast.LENGTH_SHORT).show();
-                //BackManager.getInstance().register(sEmail,sPassword,RegisterActivity.this);
+                    Toast.makeText(RegistView.this, "Please input data", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     @Override
-    public void getRegistAnswer(BackendlessUser respone) throws IOException {
+    public void RegistComplete(BackendlessUser respone) throws IOException {
         Toast.makeText(this, "Registration compelted", Toast.LENGTH_SHORT).show();
         finish();
     }
 
     @Override
-    public void getRegistAnswer(BackendlessFault fault) throws IOException {
+    public void RegistFail(BackendlessFault fault) throws IOException {
         Toast.makeText(this, "" + fault.getMessage(), Toast.LENGTH_SHORT).show();
     }
 

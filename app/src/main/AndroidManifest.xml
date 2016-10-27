@@ -8,6 +8,7 @@
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <uses-feature android:name="android.hardware.location.gps" />
     <action android:name="android.media.action.IMAGE_CAPTURE" />
     <uses-feature
@@ -21,7 +22,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MVP.signIn.SignInActivity">
+        <activity android:name=".MVP.signIn.SignInView">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -29,15 +30,20 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".MVP.maps.MainActivity"></activity>
-        <activity android:name=".MVP.nearbyPhoto.NearbyActivity"></activity>
-        <activity android:name=".MVP.registtration.RegisterActivity"></activity>
+        <activity
+            android:name=".MVP.maps.MainView"
+            android:configChanges="orientation|screenSize"></activity>
+        <activity
+            android:name=".MVP.nearbyPhoto.NearbyView"
+            android:configChanges="orientation|screenSize"></activity>
+        <activity
+            android:name=".MVP.registtration.RegistView"
+            android:configChanges="orientation|screenSize"></activity>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDEsqsWOoFBopxMEi8P3zPmyJhqVef3AJg"></meta-data>
     </application>
-
 
 
 </manifest>

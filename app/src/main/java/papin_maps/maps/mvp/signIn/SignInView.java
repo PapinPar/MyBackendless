@@ -1,4 +1,4 @@
-package papin_maps.maps.signIn;
+package papin_maps.maps.MVP.signIn;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -13,14 +13,14 @@ import com.rengwuxian.materialedittext.MaterialEditText;
 
 import dmax.dialog.SpotsDialog;
 import papin_maps.maps.R;
-import papin_maps.maps.ui.MainActivity;
-import papin_maps.maps.registration.RegisterActivity;
+import papin_maps.maps.MVP.maps.MainView;
+import papin_maps.maps.MVP.registtration.RegistView;
 
 /**
  * Created by Papin on 19.10.2016.
  */
 
-public class SignInActivity extends Activity implements MyPresenter.myAnswer {
+public class SignInView extends Activity implements SigInInterface, View.OnClickListener {
 
     private Button sigIn, signUp;
     private SharedPreferences sp;
@@ -29,6 +29,7 @@ public class SignInActivity extends Activity implements MyPresenter.myAnswer {
     private String sEmail;
     private String sPassword;
     private AlertDialog dialog;
+    private SignInPresenter signInPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,11 +41,18 @@ public class SignInActivity extends Activity implements MyPresenter.myAnswer {
         password = (MaterialEditText) findViewById(R.id.password);
         sigIn = (Button) findViewById(R.id.butSignIn);
         signUp = (Button) findViewById(R.id.butSignUp);
-        final MyPresenter s = new MyPresenter(SignInActivity.this);
 
-        sigIn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        signInPresenter = new SignInPresenter(SignInView.this);
+
+        sigIn.setOnClickListener(this);
+        signUp.setOnClickListener(this);
+
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.butSignIn:
                 dialog.show();
                 sEmail = email.getText().toString();
                 sPassword = password.getText().toString();
@@ -52,25 +60,19 @@ public class SignInActivity extends Activity implements MyPresenter.myAnswer {
                 ed.putString("EMAIL", sEmail);
                 ed.putString("PASSWORD", sPassword);
                 ed.commit();
-                s.backAnswer(sEmail, sPassword);
-                //BackManager.getInstance().login(sEmail, sPassword, SignInActivity.this);
-            }
-        });
-
-        signUp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(SignInActivity.this, RegisterActivity.class);
+                signInPresenter.trySignIn(sEmail, sPassword);
+                break;
+            case R.id.butSignUp:
+                Intent intent = new Intent(SignInView.this, RegistView.class);
                 startActivity(intent);
-            }
-        });
-
+                break;
+        }
     }
 
     @Override
-    public void Answer(boolean mynAswer) {
-        if (mynAswer) {
-            Intent intent = new Intent(this, MainActivity.class);
+    public void sigInResponse(boolean response) {
+        if (response) {
+            Intent intent = new Intent(this, MainView.class);
             startActivity(intent);
             dialog.cancel();
         } else {
@@ -79,18 +81,15 @@ public class SignInActivity extends Activity implements MyPresenter.myAnswer {
         }
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        signInPresenter.attach(this);
+    }
 
-    //@Override
-    //public void getLoginModelAnswer(boolean answer) {
-    //    if (answer) {
-    //        Intent intent = new Intent(this, MainActivity.class);
-    //        startActivity(intent);
-    //        dialog.cancel();
-    //    } else {
-    //        dialog.cancel();
-    //        Toast.makeText(this, "Wrond Email or Password", Toast.LENGTH_SHORT).show();
-    //    }
-    //}
-
-
+    @Override
+    protected void onStop() {
+        super.onStop();
+        signInPresenter.dettach();
+    }
 }

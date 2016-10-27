@@ -17,13 +17,13 @@ import papin_maps.maps.model.Product;
  * Created by Papin on 20.10.2016.
  */
 
-public class NearbyActivity extends Activity implements InterfaceNearby {
+public class NearbyView extends Activity implements NearbyInterface {
 
     private double lon, lan;
     private LatLng latLng;
     private MyAdapter mAdapter;
     private GridView mGridView;
-    private PresenterNearby presenterNearby;
+    private NearbyPresenter nearbyPresenter;
 
 
     @Override
@@ -34,12 +34,12 @@ public class NearbyActivity extends Activity implements InterfaceNearby {
         lan = i.getDoubleExtra("lan", 0);
         latLng = new LatLng(lan, lon);
         setContentView(R.layout.near_to_me_layout);
-        presenterNearby = new PresenterNearby(NearbyActivity.this);
-        presenterNearby.getNearbyPhoto(latLng);
+        nearbyPresenter = new NearbyPresenter(NearbyView.this);
+        nearbyPresenter.getNearbyPhoto(latLng);
     }
 
     @Override
-    public void NearbyRespone(ArrayList<Product> products) {
+    public void getNearbyPhoto(ArrayList<Product> products) {
         mGridView = (GridView) findViewById(R.id.mygrid);
         mAdapter = new MyAdapter(this, products);
         mGridView.setAdapter(mAdapter);
@@ -48,11 +48,11 @@ public class NearbyActivity extends Activity implements InterfaceNearby {
     @Override
     protected void onStart() {
         super.onStart();
-        presenterNearby.attach(this);
+        nearbyPresenter.attach(this);
     }
     @Override
     protected void onStop() {
         super.onStop();
-        presenterNearby.dettach();
+        nearbyPresenter.dettach();
     }
 }

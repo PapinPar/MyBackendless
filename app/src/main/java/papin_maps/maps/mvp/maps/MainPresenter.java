@@ -41,14 +41,14 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * Created by Papin on 26.10.2016.
  */
 
-public class PresenterMain implements BackManager.getUploadAnswer, BackManager.getPhotoListner {
-    InterfaceMain myView;
+public class MainPresenter implements BackManager.getUploadAnswer, BackManager.getPhotoListner {
+    MainInterface myView;
     private Gson gson;
     private Retrofit retrofit;
     private API api;
     private String sLat;
 
-    public PresenterMain(InterfaceMain answer) {
+    public MainPresenter(MainInterface answer) {
         this.myView = answer;
     }
 
@@ -73,8 +73,9 @@ public class PresenterMain implements BackManager.getUploadAnswer, BackManager.g
                 @Override
                 public void onResponse(Call<MainAddress> call, Response<MainAddress> response1) {
                     MainAddress mainAddress = response1.body();
-                    BackManager.getInstance().upload(email, bitmap, filePath, mylatlng, mainAddress.getResults().get(0).getFormattedAddress(), PresenterMain.this);
+                    BackManager.getInstance().upload(email, bitmap, filePath, mylatlng, mainAddress.getResults().get(0).getFormattedAddress(), MainPresenter.this);
                 }
+
                 @Override
                 public void onFailure(Call<MainAddress> call, Throwable t) {
                 }
@@ -84,11 +85,11 @@ public class PresenterMain implements BackManager.getUploadAnswer, BackManager.g
 
     public void dowloadMyPhoto(String emial) {
         if (myView != null) {
-            BackManager.getInstance().dowloadMyPhoto(emial, PresenterMain.this);
+            BackManager.getInstance().dowloadMyPhoto(emial, MainPresenter.this);
         }
     }
 
-    public void attach(InterfaceMain view) {
+    public void attach(MainInterface view) {
         myView = view;
     }
 
@@ -100,12 +101,12 @@ public class PresenterMain implements BackManager.getUploadAnswer, BackManager.g
     @Override
     public void uploadAnswer(boolean answer) {
         if (myView != null)
-            myView.UploadAnswer(answer);
+            myView.downloadPhoto(answer);
 
     }
 
     @Override
-    public void getMyPhotoAnswer(BackendlessCollection<Map> response) throws IOException {
+    public void getPhotosModel(BackendlessCollection<Map> response) throws IOException {
         if (myView != null) {
             List<String> MyUrl = new ArrayList<>();
             ImageLoader imageLoader = ImageLoader.getInstance();
@@ -128,7 +129,8 @@ public class PresenterMain implements BackManager.getUploadAnswer, BackManager.g
                                     Bitmap cropImage = getCroppedBitmap(loadedImage);
                                     MarkerOptions options = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(cropImage)).draggable(true);
                                     Log.d("PAPIN_TAG", "imageUri" + imageUri);
-                                    PresenterMain.this.myView.getMyPhoto(options, imageUri);
+                                    if (myView != null)
+                                        myView.getMyPhoto(options, imageUri);
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }

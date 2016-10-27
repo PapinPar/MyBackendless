@@ -9,7 +9,7 @@ import java.io.IOException;
  * Created by Papin on 26.10.2016.
  */
 
-public interface InterfaceRegistration {
-    void getRegistAnswer(BackendlessUser respone) throws IOException;
-    void getRegistAnswer(BackendlessFault fault) throws IOException;
+public interface RegistInterface {
+    void RegistComplete(BackendlessUser respone) throws IOException;
+    void RegistFail(BackendlessFault fault) throws IOException;
 }

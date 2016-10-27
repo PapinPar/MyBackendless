@@ -31,13 +31,12 @@ public class BackManager {
     }
 
     public interface getPhotoListner {
-        void getMyPhotoAnswer(BackendlessCollection<Map> rsponse) throws IOException;
+        void getPhotosModel(BackendlessCollection<Map> rsponse) throws IOException;
     }
 
-    public interface registrationAnswer {
-        void getRegistAnswer(BackendlessUser respone) throws IOException;
-
-        void getRegistAnswer(BackendlessFault fault) throws IOException;
+    public interface getRegistResponseModel {
+        void getRegistAnswerCompleted(BackendlessUser respone) throws IOException;
+        void getRegistAnswerFail(BackendlessFault fault) throws IOException;
     }
 
     public interface getUploadAnswer {
@@ -133,7 +132,7 @@ public class BackManager {
             public void handleResponse(BackendlessCollection<Map> mapBackendlessCollection) {
                 Log.d("myUri", "myUri" + mapBackendlessCollection);
                 try {
-                    response1.getMyPhotoAnswer(mapBackendlessCollection);
+                    response1.getPhotosModel(mapBackendlessCollection);
                 } catch (IOException e) {
                     Log.d("PAPIN_TAG", "e" + e.getMessage());
                     e.printStackTrace();
@@ -158,7 +157,7 @@ public class BackManager {
             public void handleResponse(BackendlessCollection<Map> mapBackendlessCollection) {
                 Log.d("myUri", "myUri" + mapBackendlessCollection);
                 try {
-                    response1.getMyPhotoAnswer(mapBackendlessCollection);
+                    response1.getPhotosModel(mapBackendlessCollection);
                 } catch (IOException e) {
                     Log.d("PAPIN_TAG", "e" + e.getMessage());
                     e.printStackTrace();
@@ -173,7 +172,7 @@ public class BackManager {
 
     }
 
-    public void register(String sEmail, String sPassword, final registrationAnswer answer) throws IOException {
+    public void register(String sEmail, String sPassword, final getRegistResponseModel answer) throws IOException {
         BackendlessUser user = new BackendlessUser();
         user.setEmail(sEmail);
         user.setPassword(sPassword);
@@ -181,7 +180,7 @@ public class BackManager {
         Backendless.UserService.register(user, new AsyncCallback<BackendlessUser>() {
             public void handleResponse(BackendlessUser registeredUser) {
                 try {
-                    answer.getRegistAnswer(registeredUser);
+                    answer.getRegistAnswerCompleted(registeredUser);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -189,7 +188,7 @@ public class BackManager {
 
             public void handleFault(BackendlessFault fault) {
                 try {
-                    answer.getRegistAnswer(fault);
+                    answer.getRegistAnswerFail(fault);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
