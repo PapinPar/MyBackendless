@@ -47,6 +47,9 @@ public class MainPresenter implements BackManager.getUploadAnswer, BackManager.g
     private Retrofit retrofit;
     private API api;
     private String sLat;
+    private List<MarkerOptions> markerList = new ArrayList<>();
+    private List<String> imageList = new ArrayList<>();
+    Boolean size = false;
 
     public MainPresenter(MainInterface answer) {
         this.myView = answer;
@@ -91,6 +94,8 @@ public class MainPresenter implements BackManager.getUploadAnswer, BackManager.g
 
     public void attach(MainInterface view) {
         myView = view;
+        if (size == true)
+            savePhoto();
     }
 
     public void dettach() {
@@ -101,12 +106,14 @@ public class MainPresenter implements BackManager.getUploadAnswer, BackManager.g
     @Override
     public void uploadAnswer(boolean answer) {
         if (myView != null)
-            myView.downloadPhoto(answer);
+            myView.uploadPhoto(answer);
 
     }
 
     @Override
-    public void getPhotosModel(BackendlessCollection<Map> response) throws IOException {
+    public void getPhotosModel(final BackendlessCollection<Map> response) throws IOException {
+        imageList.clear();
+        markerList.clear();
         if (myView != null) {
             List<String> MyUrl = new ArrayList<>();
             ImageLoader imageLoader = ImageLoader.getInstance();
@@ -131,13 +138,22 @@ public class MainPresenter implements BackManager.getUploadAnswer, BackManager.g
                                     Log.d("PAPIN_TAG", "imageUri" + imageUri);
                                     if (myView != null)
                                         myView.getMyPhoto(options, imageUri);
+                                    markerList.add(options);
+                                    imageList.add(imageUri);
+                                    if (imageList.size() == response.getData().size())
+                                        size = true;
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+
                             }
                         });
             }
         }
+    }
+
+    private void savePhoto() {
+        myView.getPhotoFromMemmory(markerList, imageList);
     }
 
     private Bitmap getCroppedBitmap(Bitmap bitmap) {

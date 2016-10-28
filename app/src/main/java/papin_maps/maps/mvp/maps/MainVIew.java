@@ -59,6 +59,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 
 import papin_maps.maps.MVP.nearbyPhoto.NearbyView;
 import papin_maps.maps.R;
@@ -461,7 +462,7 @@ MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
     }
 
     @Override
-    public void downloadPhoto(boolean answer) {
+    public void uploadPhoto(boolean answer) {
         if (answer)
             Toast.makeText(context, "Photo added successfully", Toast.LENGTH_SHORT).show();
         else
@@ -472,6 +473,15 @@ MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
     public void getMyPhoto(MarkerOptions options, String imageUri) throws IOException {
         String id = map.addMarker(options).getId();
         myMap.put(id, imageUri);
+    }
+
+    @Override
+    public void getPhotoFromMemmory(List<MarkerOptions> listMarker, List<String> imageList) {
+        map.clear();
+        for(int i = 0 ;i < listMarker.size(); i ++) {
+            String id = map.addMarker(listMarker.get(i)).getId();
+            myMap.put(id, imageList.get(i));
+        }
     }
 
 
