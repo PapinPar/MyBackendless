@@ -30,9 +30,9 @@ public class RegistPresenter implements BackManager.getRegistResponseModel {
     }
 
     @Override
-    public void getRegistAnswerCompleted(BackendlessUser respone) throws IOException {
+    public void getRegistAnswerCompleted(BackendlessUser responese) throws IOException {
         if (answer != null)
-            answer.RegistComplete(respone);
+            answer.RegistComplete(responese);
 
     }
 

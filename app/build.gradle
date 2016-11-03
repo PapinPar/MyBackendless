@@ -1,4 +1,11 @@
 apply plugin: 'com.android.application'
+apply plugin: 'io.fabric'
+apply plugin: 'com.google.gms.google-services'
+
+repositories {
+    // 4 add crashlytics sdk repo
+    maven { url 'https://maven.fabric.io/public' }
+}
 
 android {
     compileSdkVersion 23
@@ -14,6 +21,7 @@ android {
     }
     buildTypes {
         release {
+            buildConfigField "boolean", "USE_CRASHLYTICS", "true"
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -25,7 +33,10 @@ dependencies {
     compile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:23.3.0'
     compile 'com.android.support:design:23.2.0'
-    compile 'com.google.android.gms:play-services:8.4.0'
+    compile 'com.google.android.gms:play-services-maps:9.8.0'
+    compile 'com.google.android.gms:play-services-location:9.8.0'
+    compile 'com.google.android.gms:play-services-analytics:9.8.0'
+
     compile 'com.squareup.retrofit2:retrofit:2.0.2'
     compile 'com.google.code.gson:gson:2.4'
     compile 'com.squareup.retrofit2:converter-gson:2.0.2'
@@ -35,5 +46,7 @@ dependencies {
     compile 'com.nostra13.universalimageloader:universal-image-loader:1.9.5'
     compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
     compile 'com.github.d-max:spots-dialog:0.7@aar'
-
+    compile('com.crashlytics.sdk.android:crashlytics:2.6.5@aar') {
+        transitive = true
+    }
 }

@@ -5,5 +5,5 @@ package papin_maps.maps.MVP.signIn;
  */
 
 public interface SigInInterface {
-    void sigInResponse(boolean signInRespone);
+    void sigInResponse(boolean signInRespone, String error);
 }

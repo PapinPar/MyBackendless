@@ -14,8 +14,6 @@ import com.backendless.BackendlessCollection;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.ImageSize;
@@ -26,30 +24,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import papin_maps.maps.core.BackManager;
-import papin_maps.maps.model.map.MainAddress;
-import papin_maps.maps.retrofit.API;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * Created by Papin on 26.10.2016.
  */
 
-public class MainPresenter implements BackManager.getUploadAnswer, BackManager.getPhotoListner {
+public class MainPresenter implements BackManager.getUploadResponse, BackManager.getPhotoResponse {
     MainInterface myView;
-    private Gson gson;
-    private Retrofit retrofit;
-    private API api;
-    private String sLat;
     private List<MarkerOptions> markerList = new ArrayList<>();
     private List<String> imageList = new ArrayList<>();
-    Boolean size = false;
+    private Boolean size = false;
 
     public MainPresenter(MainInterface answer) {
         this.myView = answer;
@@ -58,31 +43,7 @@ public class MainPresenter implements BackManager.getUploadAnswer, BackManager.g
 
     public void upload(final String email, final Bitmap bitmap, final String filePath, final LatLng mylatlng) {
         if (myView != null) {
-            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-            OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
-            gson = new GsonBuilder()
-                    .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
-                    .create();
-            retrofit = new Retrofit.Builder()
-                    .baseUrl("http://maps.googleapis.com/maps/api/geocode/")
-                    .client(client)
-                    .addConverterFactory(GsonConverterFactory.create(gson))
-                    .build();
-            api = retrofit.create(API.class);
-            sLat = mylatlng.latitude + "," + mylatlng.longitude;
-            Call<MainAddress> usersCall = api.getAddress("false", sLat, "ru");
-            usersCall.enqueue(new Callback<MainAddress>() {
-                @Override
-                public void onResponse(Call<MainAddress> call, Response<MainAddress> response1) {
-                    MainAddress mainAddress = response1.body();
-                    BackManager.getInstance().upload(email, bitmap, filePath, mylatlng, mainAddress.getResults().get(0).getFormattedAddress(), MainPresenter.this);
-                }
-
-                @Override
-                public void onFailure(Call<MainAddress> call, Throwable t) {
-                }
-            });
+            BackManager.getInstance().getStreet(email,bitmap,filePath,mylatlng,MainPresenter.this);
         }
     }
 
@@ -102,12 +63,10 @@ public class MainPresenter implements BackManager.getUploadAnswer, BackManager.g
         myView = null;
     }
 
-
     @Override
-    public void uploadAnswer(boolean answer) {
+    public void uploadResponse(boolean answer) {
         if (myView != null)
             myView.uploadPhoto(answer);
-
     }
 
     @Override
@@ -140,8 +99,11 @@ public class MainPresenter implements BackManager.getUploadAnswer, BackManager.g
                                         myView.getMyPhoto(options, imageUri);
                                     markerList.add(options);
                                     imageList.add(imageUri);
-                                    if (imageList.size() == response.getData().size())
+                                    if (imageList.size() == response.getData().size()) {
                                         size = true;
+                                        if(myView!=null)
+                                            myView.getPhotoFromMemmory(markerList,imageList);
+                                    }
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }

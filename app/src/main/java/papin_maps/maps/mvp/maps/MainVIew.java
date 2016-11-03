@@ -30,6 +30,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.android.gms.analytics.HitBuilders;
+import com.google.android.gms.analytics.Tracker;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
@@ -46,8 +48,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -63,6 +63,7 @@ import java.util.List;
 
 import papin_maps.maps.MVP.nearbyPhoto.NearbyView;
 import papin_maps.maps.R;
+import papin_maps.maps.core.MyApplication;
 
 public class
 MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
@@ -73,8 +74,6 @@ MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
     private int count;
     private int permissionCheck;
 
-    static private String APP_ID = String.valueOf(R.string.APP_ID);
-    static private String SECRET_ID = String.valueOf(R.string.SECRET_ID);
     private StringBuilder randString;
     private String currUri, email, filePath;
     static private String symbols = "qwertyuiopasdfghjklzxcvbnmQAZWSXEDCRFVTGBYHNUJMIKOLP1234567890";
@@ -95,10 +94,23 @@ MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
 
     private InputStream stream;
 
+    private Tracker mTracker;
+    private MyApplication application;
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         context = getApplicationContext();
+
+        application = (MyApplication) getApplication();
+        mTracker = application.getDefaultTracker();
+        mTracker.setScreenName("MainView");
+        mTracker.send(new HitBuilders.EventBuilder()
+                .setAction("Create")
+                .setCategory("View")
+                .build());
+
+
         sp = getSharedPreferences("Data", MODE_PRIVATE);
         email = sp.getString("EMAIL", "");
         myMap = new HashMap<>();
@@ -143,13 +155,15 @@ MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
 
     protected void onActivityResult(int requestCode, int resultCode,
                                     Intent intent) {
-        stream = null;
-        randString = new StringBuilder();
-        count = (int) (Math.random() * ++max) + min;
-        for (int i = 0; i < count; i++)
-            randString.append(symbols.charAt((int) (Math.random() * symbols.length())));
-        filePath = String.valueOf(randString);
-        Log.d("PAPIN_TAG", "" + filePath);
+        if (requestCode > 0) {
+            stream = null;
+            randString = new StringBuilder();
+            count = (int) (Math.random() * ++max) + min;
+            for (int i = 0; i < count; i++)
+                randString.append(symbols.charAt((int) (Math.random() * symbols.length())));
+            filePath = String.valueOf(randString);
+            Log.d("PAPIN_TAG", "asd " + filePath);
+        }
 
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             try {
@@ -195,10 +209,6 @@ MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
-        BitmapDescriptor factory = BitmapDescriptorFactory.fromResource(R.drawable.powered_by_google_light);
-        LatLng myPosition = new LatLng(-34, 151);
-        map.addMarker(new MarkerOptions().position(myPosition).title("Me").draggable(true).icon(factory));
-        map.moveCamera(CameraUpdateFactory.newLatLng(myPosition));
         init();
 
         myPhoto.setOnClickListener(new View.OnClickListener() {
@@ -478,7 +488,7 @@ MainView extends FragmentActivity implements OnMapReadyCallback, MainInterface {
     @Override
     public void getPhotoFromMemmory(List<MarkerOptions> listMarker, List<String> imageList) {
         map.clear();
-        for(int i = 0 ;i < listMarker.size(); i ++) {
+        for (int i = 0; i < listMarker.size(); i++) {
             String id = map.addMarker(listMarker.get(i)).getId();
             myMap.put(id, imageList.get(i));
         }

@@ -1,12 +1,14 @@
 package papin_maps.maps.MVP.signIn;
 
+import com.backendless.exceptions.BackendlessFault;
+
 import papin_maps.maps.core.BackManager;
 
 /**
  * Created by Papin on 25.10.2016.
  */
 
-public class SignInPresenter implements BackManager.getLoginModelAnswer {
+public class SignInPresenter implements BackManager.getLoginModelResponse {
 
     private SigInInterface answer;
 
@@ -22,9 +24,12 @@ public class SignInPresenter implements BackManager.getLoginModelAnswer {
 
 
     @Override
-    public void getLoginModelAnswer(boolean ModelAnswer) {
+    public void getLoginModelResponse(boolean ModelAnswer, BackendlessFault error) {
+        String errorMessage = null;
         if (answer != null) {
-            answer.sigInResponse(ModelAnswer);
+            if (ModelAnswer == false)
+                errorMessage = error.getMessage();
+            answer.sigInResponse(ModelAnswer, errorMessage);
         }
     }
 

@@ -43,6 +43,10 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyDEsqsWOoFBopxMEi8P3zPmyJhqVef3AJg"></meta-data>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="c193bbee789abd554847e291d95413926e5c3abc"
+            />
     </application>
 
 

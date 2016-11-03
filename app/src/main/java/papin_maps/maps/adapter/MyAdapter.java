@@ -13,7 +13,7 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 
 import papin_maps.maps.R;
-import papin_maps.maps.model.Product;
+import papin_maps.maps.model.Photo;
 
 /**
  * Created by Papin on 21.10.2016.
@@ -22,13 +22,11 @@ import papin_maps.maps.model.Product;
 public class MyAdapter extends BaseAdapter {
 
     private LayoutInflater lInflater;
-    private ArrayList<Product> objects;
-    private final Picasso picasso;
+    private ArrayList<Photo> objects;
 
-    public MyAdapter(Context context, ArrayList<Product> products) {
+    public MyAdapter(Context context, ArrayList<Photo> photos) {
         lInflater = LayoutInflater.from(context);
-        picasso = Picasso.with(context);
-        objects = products;
+        objects = photos;
     }
 
     @Override

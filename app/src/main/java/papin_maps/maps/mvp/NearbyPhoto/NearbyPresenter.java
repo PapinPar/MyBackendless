@@ -9,16 +9,16 @@ import java.util.List;
 import java.util.Map;
 
 import papin_maps.maps.core.BackManager;
-import papin_maps.maps.model.Product;
+import papin_maps.maps.model.Photo;
 
 /**
  * Created by Papin on 26.10.2016.
  */
 
-public class NearbyPresenter implements BackManager.getPhotoListner {
+public class NearbyPresenter implements BackManager.getPhotoResponse {
 
     private NearbyInterface view;
-    private ArrayList<Product> products = new ArrayList<>();
+    private ArrayList<Photo> photosList = new ArrayList<>();
 
     public NearbyPresenter(NearbyInterface view) {
         this.view = view;
@@ -46,9 +46,9 @@ public class NearbyPresenter implements BackManager.getPhotoListner {
         for (int i = 0; i < response.getData().size(); i++) {
             MyUrl.add(String.valueOf(response.getData().get(i).get("photoName")));
             street.add(String.valueOf(response.getData().get(i).get("street")));
-            products.add(new Product(MyUrl.get(i), street.get(i)));
+            photosList.add(new Photo(MyUrl.get(i), street.get(i)));
         }
-        view.getNearbyPhoto(products);
+        view.getNearbyPhoto(photosList);
     }
 
 
